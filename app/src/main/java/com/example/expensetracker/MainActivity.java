@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.net.ConnectivityManager;
@@ -35,6 +36,11 @@ public class MainActivity extends Activity {
     private static final int BORDER = Color.rgb(223, 226, 230);
     private static final int GREEN = Color.rgb(10, 155, 97);
     private static final int RED = Color.rgb(201, 42, 56);
+    private static final int NAVY = Color.rgb(0, 35, 47);
+    private static final int NEON_GREEN = Color.rgb(0, 232, 104);
+    private static final int PLANT_TEAL = Color.rgb(12, 137, 140);
+    private static final int PLANT_MINT = Color.rgb(157, 222, 211);
+    private static final int PLANT_SHEET = Color.rgb(244, 249, 248);
 
     private final List<Expense> expenses = new ArrayList<>();
     private SharedPreferences preferences;
@@ -83,7 +89,136 @@ public class MainActivity extends Activity {
     }
 
     private void showLogin() {
-        LinearLayout root = column(Color.WHITE, 24);
+        getWindow().setStatusBarColor(PLANT_TEAL);
+        getWindow().setNavigationBarColor(PLANT_SHEET);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
+        LinearLayout root = column(PLANT_MINT, 0);
+        root.setPadding(0, 12, 0, 0);
+
+        LinearLayout hero = column(PLANT_TEAL, 8);
+        hero.setPadding(20, 18, 20, 12);
+        TextView leafTop = label("◜  ◝", 42, Color.rgb(104, 202, 174), false);
+        leafTop.setGravity(Gravity.RIGHT);
+        hero.addView(leafTop, new LinearLayout.LayoutParams(-1, 42));
+        hero.addView(label("Hello!", 77, Color.WHITE, true));
+        hero.addView(label("Welcome to Expense Tracker", 24, Color.WHITE, false));
+        TextView plant = label("❯\n❮", 92, Color.rgb(105, 205, 167), false);
+        plant.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        hero.addView(plant, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(hero, new LinearLayout.LayoutParams(-1, 0, 0.40f));
+
+        LinearLayout sheet = column(PLANT_SHEET, 10);
+        sheet.setPadding(26, 24, 26, 16);
+        GradientDrawable sheetBackground = new GradientDrawable();
+        sheetBackground.setColor(PLANT_SHEET);
+        sheetBackground.setCornerRadii(new float[]{24, 24, 24, 24, 0, 0, 0, 0});
+        sheet.setBackground(sheetBackground);
+        sheet.addView(label("Login", 35, PLANT_TEAL, true));
+        sheet.addView(space(22));
+
+        EditText email = pillInput("✉  Email", false);
+        email.setContentDescription("Email address");
+        sheet.addView(email, new LinearLayout.LayoutParams(-1, 50));
+        sheet.addView(space(18));
+        EditText password = pillInput("♙  Password", true);
+        password.setContentDescription("Password");
+        sheet.addView(password, new LinearLayout.LayoutParams(-1, 50));
+        TextView forgot = label("Forgot Password", 12, PLANT_TEAL, false);
+        forgot.setGravity(Gravity.RIGHT);
+        sheet.addView(forgot, new LinearLayout.LayoutParams(-1, 34));
+        sheet.addView(space(12));
+
+        Button login = button("Login", PLANT_TEAL, Color.WHITE);
+        login.setTextSize(30);
+        sheet.addView(login, new LinearLayout.LayoutParams(-1, 56));
+        login.setOnClickListener(v -> {
+            if (email.getText().toString().trim().isEmpty()) email.setError("Enter your email");
+            else if (password.getText().toString().trim().isEmpty()) password.setError("Enter your password");
+            else { preferences.edit().putBoolean("logged_in", true).apply(); showShell(); }
+        });
+        sheet.addView(space(18));
+        LinearLayout divider = row();
+        divider.setGravity(Gravity.CENTER);
+        divider.addView(label("────────  or sign with  ────────", 15, Color.LTGRAY, false));
+        sheet.addView(divider, new LinearLayout.LayoutParams(-1, 30));
+        sheet.addView(space(10));
+        LinearLayout social = row();
+        social.setGravity(Gravity.CENTER);
+        for (String provider : new String[]{"●", "G", "●"}) {
+            Button socialButton = button(provider, Color.WHITE, provider.equals("G") ? Color.rgb(219, 68, 55) : PLANT_TEAL);
+            socialButton.setTextSize(20);
+            social.addView(socialButton, new LinearLayout.LayoutParams(52, 48));
+            social.addView(spaceHorizontal(8));
+        }
+        sheet.addView(social);
+        sheet.addView(space(18));
+        LinearLayout signup = row();
+        signup.setGravity(Gravity.CENTER);
+        signup.addView(label("Don't have an account? ", 13, BODY, false));
+        signup.addView(label("Sign Up", 13, PLANT_TEAL, true));
+        sheet.addView(signup);
+        root.addView(sheet, new LinearLayout.LayoutParams(-1, 0, 0.60f));
+        setContentView(root);
+    }
+
+    private void showLoginGastos() {
+        getWindow().setStatusBarColor(NAVY);
+        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
+        LinearLayout root = column(NAVY, 0);
+        root.setPadding(20, 20, 20, 0);
+        LinearLayout hero = column(NAVY, 12);
+        hero.setPadding(20, 0, 20, 20);
+        hero.addView(label("Gastos", 17, Color.WHITE, true));
+        hero.addView(space(28));
+        hero.addView(label("Every peso,\naccounted for.", 30, Color.WHITE, false));
+        root.addView(hero, new LinearLayout.LayoutParams(-1, 0, 0.36f));
+
+        LinearLayout sheet = column(Color.WHITE, 12);
+        sheet.setPadding(20, 20, 20, 12);
+        GradientDrawable sheetBackground = new GradientDrawable();
+        sheetBackground.setColor(Color.WHITE);
+        sheetBackground.setCornerRadii(new float[]{22, 22, 22, 22, 0, 0, 0, 0});
+        sheet.setBackground(sheetBackground);
+        sheet.setGravity(Gravity.TOP);
+        sheet.addView(label("Log in", 20, INK, true));
+        sheet.addView(space(14));
+        sheet.addView(label("Email", 12, NAVY, true));
+        EditText email = outlinedInput("ana.reyes@gmail.com", false);
+        email.setContentDescription("Email address");
+        sheet.addView(email);
+        sheet.addView(space(10));
+        sheet.addView(label("Password", 12, NAVY, true));
+        EditText password = outlinedInput("At least 6 characters", true);
+        password.setContentDescription("Password");
+        sheet.addView(password);
+        sheet.addView(space(64));
+
+        Button login = button("Log in", NEON_GREEN, Color.BLACK);
+        login.setTextSize(14);
+        sheet.addView(login, new LinearLayout.LayoutParams(-1, 50));
+        login.setOnClickListener(v -> {
+            if (email.getText().toString().trim().isEmpty()) email.setError("Enter your email");
+            else if (password.getText().toString().trim().isEmpty()) password.setError("Enter your password");
+            else { preferences.edit().putBoolean("logged_in", true).apply(); showShell(); }
+        });
+        sheet.addView(space(10));
+        Button google = button("Continue with Google", Color.WHITE, Color.BLACK);
+        google.setTextSize(14);
+        sheet.addView(google, new LinearLayout.LayoutParams(-1, 46));
+        sheet.addView(space(10));
+        sheet.addView(space(0), new LinearLayout.LayoutParams(1, 0, 1));
+        LinearLayout secure = row();
+        secure.setGravity(Gravity.CENTER);
+        sheet.addView(secure);
+        root.addView(sheet, new LinearLayout.LayoutParams(-1, 0, 0.64f));
+        setContentView(root);
+    }
+
+    private void showLoginLegacy() {
+        LinearLayout root = column(Color.WHITE, 30);
         root.setGravity(Gravity.CENTER_VERTICAL);
         root.setPadding(24, 24, 24, 24);
 
@@ -128,6 +263,8 @@ public class MainActivity extends Activity {
     }
 
     private void showShell() {
+        getWindow().setStatusBarColor(Color.WHITE);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         LinearLayout root = column(Color.WHITE, 0);
         LinearLayout top = row();
         top.setGravity(Gravity.CENTER_VERTICAL);
@@ -450,9 +587,28 @@ public class MainActivity extends Activity {
     private LinearLayout column(int color, int gap) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setBackgroundColor(color); return l; }
     private LinearLayout row() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); return l; }
     private LinearLayout card() { LinearLayout l = column(Color.WHITE, 12); l.setPadding(16, 14, 16, 14); l.setBackgroundColor(Color.WHITE); return l; }
-    private TextView label(String text, int size, int color, boolean bold) { TextView v = new TextView(this); v.setText(text); v.setTextSize(size); v.setTextColor(color); v.setTypeface(Typeface.DEFAULT, bold ? Typeface.BOLD : Typeface.NORMAL); v.setPadding(0, 4, 0, 4); return v; }
-    private EditText input(String hint, boolean password) { EditText e = new EditText(this); e.setHint(hint); e.setTextSize(16); e.setSingleLine(true); e.setPadding(14, 0, 14, 0); if (password) e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD); e.setLayoutParams(new LinearLayout.LayoutParams(-1, 52)); return e; }
-    private Button button(String text, int background, int foreground) { Button b = new Button(this); b.setText(text); b.setTextColor(foreground); b.setTextSize(14); b.setAllCaps(false); b.setBackgroundColor(background); return b; }
+    private TextView label(String text, int size, int color, boolean bold) { TextView v = new TextView(this); v.setText(text); v.setTextSize(size); v.setTextColor(color); v.setTypeface(Typeface.SANS_SERIF, bold ? Typeface.BOLD : Typeface.NORMAL); v.setPadding(0, 4, 0, 4); return v; }
+    private EditText input(String hint, boolean password) { EditText e = new EditText(this); e.setHint(hint); e.setTextSize(16); e.setTypeface(Typeface.SANS_SERIF, Typeface.NORMAL); e.setSingleLine(true); e.setPadding(14, 0, 14, 0); if (password) e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD); e.setLayoutParams(new LinearLayout.LayoutParams(-1, 52)); return e; }
+    private EditText outlinedInput(String hint, boolean password) {
+        EditText e = input(hint, password);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setStroke(1, Color.rgb(180, 195, 205));
+        background.setCornerRadius(10);
+        e.setBackground(background);
+        if (password) e.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_view, 0);
+        return e;
+    }
+    private EditText pillInput(String hint, boolean password) {
+        EditText e = input(hint, password);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(100);
+        e.setBackground(background);
+        e.setPadding(14, 0, 14, 0);
+        return e;
+    }
+    private Button button(String text, int background, int foreground) { Button b = new Button(this); b.setText(text); b.setTextColor(foreground); b.setTextSize(14); b.setAllCaps(false); b.setMinHeight(0); b.setMinimumHeight(0); b.setPadding(0, 0, 0, 0); b.setGravity(Gravity.CENTER); b.setBackgroundColor(background); return b; }
     private View space(int height) { Space s = new Space(this); s.setLayoutParams(new LinearLayout.LayoutParams(1, height)); return s; }
     private View spaceHorizontal(int width) { Space s = new Space(this); s.setLayoutParams(new LinearLayout.LayoutParams(width, 1)); return s; }
     private boolean hasNetwork() {
