@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Space;
@@ -52,7 +53,7 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("expense_tracker", MODE_PRIVATE);
         loadExpenses();
-        if (preferences.getBoolean("logged_in", false)) showShell(); else showLogin();
+        if (preferences.getBoolean("logged_in", false)) showShell(); else showLoginReference();
     }
 
     private void seedExpenses() {
@@ -162,6 +163,270 @@ public class MainActivity extends Activity {
         setContentView(root);
     }
 
+    private void showLoginReferenceOld() {
+        final int teal = Color.rgb(8, 122, 128);
+        final int darkTeal = Color.rgb(0, 55, 59);
+        final int card = Color.rgb(255, 251, 252);
+        final int field = Color.rgb(242, 239, 239);
+
+        getWindow().setStatusBarColor(teal);
+        getWindow().setNavigationBarColor(teal);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
+        LinearLayout root = column(teal, 0);
+        root.setPadding(18, 2, 18, 0);
+        root.setBackground(gradientBackground(Color.rgb(10, 137, 143), Color.rgb(0, 74, 80), 0));
+
+        LinearLayout sheet = column(card, 0);
+        sheet.setPadding(28, 42, 28, 24);
+        sheet.setBackground(roundedBackground(card, 34));
+        sheet.setElevation(2);
+
+        LinearLayout logo = column(darkTeal, 0);
+        logo.setGravity(Gravity.CENTER);
+        logo.setBackground(roundedBackground(darkTeal, 10));
+        TextView logoMark = label("*", 38, Color.WHITE, true);
+        logoMark.setGravity(Gravity.CENTER);
+        logo.addView(logoMark, new LinearLayout.LayoutParams(92, 92));
+        LinearLayout logoWrap = row();
+        logoWrap.setGravity(Gravity.CENTER);
+        logoWrap.addView(logo, new LinearLayout.LayoutParams(92, 92));
+        sheet.addView(logoWrap, new LinearLayout.LayoutParams(-1, 92));
+        sheet.addView(space(22));
+
+        TextView title = label("Expense Tracker", 32, Color.rgb(18, 16, 17), true);
+        title.setGravity(Gravity.CENTER);
+        sheet.addView(title, new LinearLayout.LayoutParams(-1, 54));
+        TextView subtitle = label("To sign in to an account in the application,\nenter your email and password", 14, BODY, false);
+        subtitle.setGravity(Gravity.CENTER);
+        sheet.addView(subtitle, new LinearLayout.LayoutParams(-1, 52));
+        sheet.addView(space(24));
+
+        TextView emailLabel = label("Email", 16, Color.rgb(34, 30, 31), true);
+        emailLabel.setGravity(Gravity.CENTER_VERTICAL);
+        sheet.addView(emailLabel, new LinearLayout.LayoutParams(-1, 44));
+        EditText email = loginField("", false, field);
+        email.setContentDescription("Email address");
+        sheet.addView(email, new LinearLayout.LayoutParams(-1, 82));
+        sheet.addView(space(24));
+        TextView passwordLabel = label("Password", 16, Color.rgb(34, 30, 31), true);
+        passwordLabel.setGravity(Gravity.CENTER_VERTICAL);
+        sheet.addView(passwordLabel, new LinearLayout.LayoutParams(-1, 44));
+        EditText password = loginField("", true, field);
+        password.setContentDescription("Password");
+        sheet.addView(password, new LinearLayout.LayoutParams(-1, 82));
+        sheet.addView(space(24));
+
+        TextView forgot = label("Forgot password?", 18, Color.rgb(56, 90, 190), false);
+        forgot.setGravity(Gravity.RIGHT);
+        forgot.setPaintFlags(forgot.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        forgot.setOnClickListener(v -> Toast.makeText(this, "Password recovery is not configured yet", Toast.LENGTH_SHORT).show());
+        sheet.addView(forgot, new LinearLayout.LayoutParams(-1, 78));
+
+        Button login = filledButton("Sign In  " + "\u2192", teal, Color.WHITE, 30, 22);
+        sheet.addView(login, new LinearLayout.LayoutParams(-1, 86));
+        login.setOnClickListener(v -> {
+            if (email.getText().toString().trim().isEmpty()) email.setError("Enter your email");
+            else if (password.getText().toString().trim().isEmpty()) password.setError("Enter your password");
+            else { preferences.edit().putBoolean("logged_in", true).apply(); showShell(); }
+        });
+        sheet.addView(space(34));
+
+        LinearLayout divider = row();
+        divider.setGravity(Gravity.CENTER);
+        divider.addView(dividerLine(), new LinearLayout.LayoutParams(0, 1, 1));
+        TextView or = label("or", 16, Color.GRAY, false);
+        or.setGravity(Gravity.CENTER);
+        divider.addView(or, new LinearLayout.LayoutParams(52, 38));
+        divider.addView(dividerLine(), new LinearLayout.LayoutParams(0, 1, 1));
+        sheet.addView(divider, new LinearLayout.LayoutParams(-1, 38));
+        sheet.addView(space(24));
+
+        LinearLayout social = row();
+        social.setGravity(Gravity.CENTER);
+        social.addView(outlinedButton("G  Sign in with Google", Color.rgb(72, 72, 72), 15), new LinearLayout.LayoutParams(190, 70));
+        social.addView(spaceHorizontal(14));
+        social.addView(outlinedButton("●  Sign in with Apple", Color.rgb(25, 25, 25), 15), new LinearLayout.LayoutParams(190, 70));
+        sheet.addView(social, new LinearLayout.LayoutParams(-1, 70));
+        sheet.addView(space(28));
+
+        LinearLayout signup = row();
+        signup.setGravity(Gravity.CENTER);
+        signup.addView(label("Don't have an account yet? ", 17, BODY, false));
+        TextView create = label("Create Account", 17, Color.rgb(56, 90, 190), true);
+        create.setPaintFlags(create.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        create.setOnClickListener(v -> Toast.makeText(this, "Account creation is not configured yet", Toast.LENGTH_SHORT).show());
+        signup.addView(create);
+        sheet.addView(signup, new LinearLayout.LayoutParams(-1, 42));
+        root.addView(sheet, new LinearLayout.LayoutParams(-1, 1200));
+
+        TextView legal = label("By clicking \"Sign In\", I have read and agree\nwith the Term Sheet, Privacy Policy", 17, Color.WHITE, false);
+        legal.setGravity(Gravity.CENTER);
+        root.addView(legal, new LinearLayout.LayoutParams(-1, 110));
+        setContentView(root);
+    }
+
+    private void showLoginReference() {
+        final int teal = Color.rgb(8, 126, 132);
+        final int deepTeal = Color.rgb(0, 57, 61);
+        final int offWhite = Color.rgb(255, 251, 252);
+        final int ink = Color.rgb(20, 18, 19);
+        final int link = Color.rgb(57, 89, 184);
+
+        getWindow().setStatusBarColor(teal);
+        getWindow().setNavigationBarColor(teal);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
+        LinearLayout root = column(teal, 0);
+        root.setGravity(Gravity.CENTER);
+        root.setPadding(dp(9), 0, dp(9), 0);
+        root.setBackground(gradientBackground(Color.rgb(12, 143, 149), Color.rgb(0, 72, 78), 0));
+
+        LinearLayout card = column(offWhite, 0);
+        card.setPadding(dp(22), dp(20), dp(22), dp(18));
+        card.setBackground(roundedBackground(offWhite, dp(36)));
+        card.setElevation(dp(2));
+
+        ImageView logoImage = new ImageView(this);
+        logoImage.setImageResource(R.drawable.expenses_logo);
+        logoImage.setContentDescription("Expenses Tracker logo");
+        logoImage.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        card.addView(logoImage, new LinearLayout.LayoutParams(-1, dp(72)));
+        card.addView(space(dp(12)));
+
+        TextView title = label("Expenses Tracker System", 18, ink, true);
+        title.setGravity(Gravity.CENTER);
+        card.addView(title, new LinearLayout.LayoutParams(-1, dp(32)));
+        TextView subtitle = label("To sign in to an account in the application,\nenter your email and password", 12, BODY, false);
+        subtitle.setGravity(Gravity.CENTER);
+        card.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(32)));
+        card.addView(space(dp(12)));
+
+        TextView emailLabel = label("Email", 14, ink, true);
+        emailLabel.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(emailLabel, new LinearLayout.LayoutParams(-1, dp(22)));
+        EditText email = loginField("", false, Color.rgb(242, 240, 240));
+        email.setContentDescription("Email address");
+        card.addView(email, new LinearLayout.LayoutParams(-1, dp(48)));
+        card.addView(space(dp(8)));
+
+        TextView passwordLabel = label("Password", 14, ink, true);
+        passwordLabel.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(passwordLabel, new LinearLayout.LayoutParams(-1, dp(22)));
+        EditText password = loginField("", true, Color.rgb(242, 240, 240));
+        password.setContentDescription("Password");
+        card.addView(password, new LinearLayout.LayoutParams(-1, dp(48)));
+        card.addView(space(dp(7)));
+
+        TextView forgot = label("Forgot password?", 14, link, false);
+        forgot.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        forgot.setPaintFlags(forgot.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        forgot.setOnClickListener(v -> Toast.makeText(this, "Password recovery is not configured yet", Toast.LENGTH_SHORT).show());
+        card.addView(forgot, new LinearLayout.LayoutParams(-1, dp(31)));
+
+        Button login = filledButton("Sign In  " + "\u2192", teal, Color.WHITE, 22, dp(16));
+        card.addView(login, new LinearLayout.LayoutParams(-1, dp(48)));
+        login.setOnClickListener(v -> {
+            if (email.getText().toString().trim().isEmpty()) email.setError("Enter your email");
+            else if (password.getText().toString().trim().isEmpty()) password.setError("Enter your password");
+            else { preferences.edit().putBoolean("logged_in", true).apply(); showShell(); }
+        });
+        card.addView(space(dp(12)));
+
+        LinearLayout divider = row();
+        divider.setGravity(Gravity.CENTER_VERTICAL);
+        divider.addView(dividerLine(), new LinearLayout.LayoutParams(0, dp(1), 1));
+        TextView or = label("or", 10, Color.GRAY, false);
+        or.setGravity(Gravity.CENTER);
+        divider.addView(or, new LinearLayout.LayoutParams(dp(28), dp(20)));
+        divider.addView(dividerLine(), new LinearLayout.LayoutParams(0, dp(1), 1));
+        card.addView(divider, new LinearLayout.LayoutParams(-1, dp(20)));
+        card.addView(space(dp(8)));
+
+        LinearLayout social = row();
+        social.setGravity(Gravity.CENTER);
+        Button google = outlinedButton("G  Sign in with Google", Color.rgb(70, 70, 70), 10);
+        Button apple = outlinedButton("●  Sign in with Apple", Color.rgb(25, 25, 25), 10);
+        social.addView(google, new LinearLayout.LayoutParams(0, dp(36), 1));
+        social.addView(spaceHorizontal(dp(8)));
+        social.addView(apple, new LinearLayout.LayoutParams(0, dp(36), 1));
+        card.addView(social, new LinearLayout.LayoutParams(-1, dp(36)));
+        card.addView(space(dp(10)));
+
+        LinearLayout signup = row();
+        signup.setGravity(Gravity.CENTER);
+        signup.addView(label("Don't have an account yet? ", 12, BODY, false));
+        TextView create = label("Create Account", 12, link, true);
+        create.setPaintFlags(create.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        create.setOnClickListener(v -> Toast.makeText(this, "Account creation is not configured yet", Toast.LENGTH_SHORT).show());
+        signup.addView(create);
+        card.addView(signup, new LinearLayout.LayoutParams(-1, dp(24)));
+
+        root.addView(card, new LinearLayout.LayoutParams(-1, -2));
+        setContentView(root);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private GradientDrawable roundedBackground(int color, float radius) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(radius);
+        return drawable;
+    }
+
+    private GradientDrawable gradientBackground(int startColor, int endColor, float radius) {
+        GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{startColor, endColor});
+        drawable.setCornerRadius(radius);
+        return drawable;
+    }
+
+    private EditText loginField(String hint, boolean password, int backgroundColor) {
+        EditText e = input(hint, password);
+        e.setBackground(gradientBackground(Color.rgb(247, 245, 245), backgroundColor, 24));
+        e.setPadding(14, 0, password ? 42 : 14, 0);
+        e.setElevation(2);
+        if (password) {
+            e.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_view, 0);
+            e.setOnTouchListener((view, event) -> {
+                if (event.getAction() == android.view.MotionEvent.ACTION_UP && event.getX() > e.getWidth() - 72) {
+                    int cursor = e.getSelectionStart();
+                    boolean visible = (e.getInputType() & InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) != 0;
+                    e.setInputType(InputType.TYPE_CLASS_TEXT | (visible ? InputType.TYPE_TEXT_VARIATION_PASSWORD : InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD));
+                    e.setSelection(Math.max(0, cursor));
+                    return true;
+                }
+                return false;
+            });
+        }
+        return e;
+    }
+
+    private Button filledButton(String text, int backgroundColor, int textColor, int textSize, int radius) {
+        Button b = button(text, backgroundColor, textColor);
+        b.setTextSize(textSize);
+        b.setTypeface(Typeface.SANS_SERIF, Typeface.BOLD);
+        b.setBackground(gradientBackground(backgroundColor, Color.rgb(0, 57, 61), radius));
+        return b;
+    }
+
+    private Button outlinedButton(String text, int textColor, int textSize) {
+        Button b = button(text, Color.WHITE, textColor);
+        b.setTextSize(textSize);
+        b.setBackground(roundedBackground(Color.WHITE, 18));
+        b.getBackground().setAlpha(255);
+        b.setElevation(2);
+        return b;
+    }
+
+    private View dividerLine() {
+        View line = new View(this);
+        line.setBackgroundColor(Color.rgb(120, 116, 117));
+        return line;
+    }
+
     private void showLoginGastos() {
         getWindow().setStatusBarColor(NAVY);
         getWindow().setNavigationBarColor(Color.WHITE);
@@ -265,44 +530,52 @@ public class MainActivity extends Activity {
     private void showShell() {
         getWindow().setStatusBarColor(Color.WHITE);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        LinearLayout root = column(Color.WHITE, 0);
+        LinearLayout root = column(PLANT_TEAL, 0);
+        root.setPadding(12, 16, 12, 0);
+        root.setBackground(gradientBackground(Color.rgb(12, 143, 149), Color.rgb(0, 72, 78), 0));
+
+        LinearLayout surface = column(PLANT_SHEET, 0);
+        surface.setBackground(roundedBackground(PLANT_SHEET, 26));
+        surface.setElevation(3);
         LinearLayout top = row();
         top.setGravity(Gravity.CENTER_VERTICAL);
         top.setPadding(16, 12, 8, 8);
-        TextView title = label("Dashboard", 22, INK, true);
+        TextView title = label("Dashboard", 22, Color.rgb(0, 55, 59), true);
         top.addView(title, new LinearLayout.LayoutParams(0, 56, 1));
         TextView profile = label("●", 22, INDIGO, true);
         profile.setGravity(Gravity.CENTER);
         profile.setContentDescription("Profile and logout");
         profile.setOnClickListener(v -> {
             preferences.edit().putBoolean("logged_in", false).apply();
-            showLogin();
+            showLoginReference();
         });
         top.addView(profile, new LinearLayout.LayoutParams(56, 56));
-        root.addView(top);
+        surface.addView(top);
         if (!hasNetwork()) {
             TextView offline = label("You're offline — changes are saved on this device.", 13, RED, true);
             offline.setPadding(16, 10, 16, 10);
             offline.setBackgroundColor(Color.rgb(255, 238, 240));
-            root.addView(offline);
+            surface.addView(offline);
         }
 
-        content = column(Color.WHITE, 0);
-        root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
+        content = column(PLANT_SHEET, 0);
+        surface.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
 
         LinearLayout nav = row();
-        nav.setPadding(4, 4, 4, 4);
+        nav.setPadding(8, 4, 8, 4);
+        nav.setBackgroundColor(PLANT_SHEET);
         String[] tabs = {"▦\nDashboard", "▤\nExpenses", "▣\nBudget", "▥\nHistory"};
         for (int i = 0; i < tabs.length; i++) {
             final int index = i;
-            TextView item = label(tabs[i], 12, i == 0 ? INDIGO : BODY, false);
+            TextView item = label(tabs[i], 12, i == 0 ? PLANT_TEAL : BODY, i == 0);
             item.setGravity(Gravity.CENTER);
             item.setOnClickListener(v -> { selectedTab = index; renderTab(); });
             nav.addView(item, new LinearLayout.LayoutParams(0, 64, 1));
         }
-        root.addView(nav);
+        surface.addView(nav);
+        root.addView(surface, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        Button fab = button("+", INDIGO, Color.WHITE);
+        Button fab = filledButton("+", PLANT_TEAL, Color.WHITE, 26, 32);
         fab.setTextSize(26);
         fab.setContentDescription("Add expense");
         fab.setOnClickListener(v -> showNewExpenseDialog());
@@ -324,7 +597,7 @@ public class MainActivity extends Activity {
 
     private void renderDashboard() {
         ScrollView scroll = new ScrollView(this);
-        LinearLayout body = column(Color.WHITE, 16);
+        LinearLayout body = column(PLANT_SHEET, 16);
         body.setPadding(16, 8, 16, 80);
         body.addView(label("₱23,730.00 due today", 30, INK, false));
         body.addView(label("Next cutoff is in 4 days · October 15", 14, BODY, false));
@@ -586,7 +859,13 @@ public class MainActivity extends Activity {
     private void renderPlaceholder(String title) { content.setGravity(Gravity.CENTER); content.addView(label(title + "\n\nThis section is planned for the next phase.", 22, INK, true)); }
     private LinearLayout column(int color, int gap) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setBackgroundColor(color); return l; }
     private LinearLayout row() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); return l; }
-    private LinearLayout card() { LinearLayout l = column(Color.WHITE, 12); l.setPadding(16, 14, 16, 14); l.setBackgroundColor(Color.WHITE); return l; }
+    private LinearLayout card() {
+        LinearLayout l = column(Color.WHITE, 12);
+        l.setPadding(16, 14, 16, 14);
+        l.setBackground(roundedBackground(Color.WHITE, 18));
+        l.setElevation(2);
+        return l;
+    }
     private TextView label(String text, int size, int color, boolean bold) { TextView v = new TextView(this); v.setText(text); v.setTextSize(size); v.setTextColor(color); v.setTypeface(Typeface.SANS_SERIF, bold ? Typeface.BOLD : Typeface.NORMAL); v.setPadding(0, 4, 0, 4); return v; }
     private EditText input(String hint, boolean password) { EditText e = new EditText(this); e.setHint(hint); e.setTextSize(16); e.setTypeface(Typeface.SANS_SERIF, Typeface.NORMAL); e.setSingleLine(true); e.setPadding(14, 0, 14, 0); if (password) e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD); e.setLayoutParams(new LinearLayout.LayoutParams(-1, 52)); return e; }
     private EditText outlinedInput(String hint, boolean password) {
