@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -377,6 +378,12 @@ public class MainActivity extends Activity {
         return drawable;
     }
 
+    private GradientDrawable borderRoundedBackground(int color, int strokeColor, float radius) {
+        GradientDrawable drawable = roundedBackground(color, radius);
+        drawable.setStroke(1, strokeColor);
+        return drawable;
+    }
+
     private GradientDrawable gradientBackground(int startColor, int endColor, float radius) {
         GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{startColor, endColor});
         drawable.setCornerRadius(radius);
@@ -563,7 +570,7 @@ public class MainActivity extends Activity {
 
         LinearLayout nav = row();
         nav.setPadding(8, 4, 8, 4);
-        nav.setBackgroundColor(PLANT_SHEET);
+        nav.setBackgroundColor(Color.WHITE);
         String[] tabs = {"▦\nDashboard", "▤\nExpenses", "▣\nBudget", "▥\nHistory"};
         for (int i = 0; i < tabs.length; i++) {
             final int index = i;
@@ -575,63 +582,233 @@ public class MainActivity extends Activity {
         surface.addView(nav);
         root.addView(surface, new LinearLayout.LayoutParams(-1, 0, 1));
 
+        FrameLayout frame = new FrameLayout(this);
+        frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
+
         Button fab = filledButton("+", PLANT_TEAL, Color.WHITE, 26, 32);
         fab.setTextSize(26);
         fab.setContentDescription("Add expense");
         fab.setOnClickListener(v -> showNewExpenseDialog());
-        addContentView(fab, new ViewGroup.LayoutParams(64, 64));
-        fab.setX(getResources().getDisplayMetrics().widthPixels - 88);
-        fab.setY(getResources().getDisplayMetrics().heightPixels - 150);
-        setContentView(root);
+        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        fabParams.bottomMargin = dp(35);
+        fab.setPadding(0, 0, 0, 0);
+        fab.setElevation(dp(6));
+        frame.addView(fab, fabParams);
+        setContentView(frame);
         renderTab();
     }
 
     private void renderTab() {
         content.removeAllViews();
-        if (selectedTab == 0) renderDashboard();
+        if (selectedTab == 0) renderDashboardModern();
         else if (selectedTab == 1) renderExpenses();
         else if (selectedTab == 2) renderBudget();
         else if (selectedTab == 3) renderHistory();
         else renderPlaceholder(new String[]{"Dashboard", "Expenses", "Budget", "History"}[selectedTab]);
     }
 
+    private void renderDashboardModern() {
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout body = column(PLANT_SHEET, 12);
+        body.setPadding(16, 8, 16, 96);
+
+        List<Expense> dueToday = dueTodayExpenses();
+        double totalDue = 0;
+        for (Expense expense : dueToday) totalDue += numericAmount(expense.amount);
+
+        LinearLayout hero = column(Color.rgb(0, 55, 59), 0);
+        hero.setPadding(17, 12, 17, 10);
+        hero.setBackground(gradientBackground(Color.rgb(0, 55, 59), Color.rgb(0, 82, 86), 16));
+        TextView date = label("SATURDAY, OCT 10", 9, PLANT_MINT, true);
+        date.setLetterSpacing(.08f);
+        hero.addView(date);
+        LinearLayout total = row();
+        total.setGravity(Gravity.CENTER_VERTICAL);
+        total.addView(label(formatAmount(totalDue), 28, Color.WHITE, true), new LinearLayout.LayoutParams(0, 40, 1));
+        total.addView(label("due today", 12, Color.rgb(190, 205, 207), false));
+        hero.addView(total);
+        Expense next = nextExpense(dueToday);
+        hero.addView(label(next == null ? "No upcoming bills" : "Next: " + next.name + " - " + next.amount + " on " + next.date, 11, Color.rgb(190, 205, 207), false));
+        hero.setMinimumHeight(116);
+        body.addView(hero, new LinearLayout.LayoutParams(-1, -2));
+        body.addView(space(12));
+
+        LinearLayout dueHeading = row();
+        dueHeading.addView(label("Due today", 16, Color.rgb(0, 55, 59), true), new LinearLayout.LayoutParams(0, -2, 1));
+        dueHeading.addView(label(dueToday.size() + " bills", 11, BODY, false));
+        body.addView(dueHeading);
+        body.addView(space(8));
+
+        LinearLayout dueCard = column(Color.WHITE, 0);
+        dueCard.setBackground(borderRoundedBackground(Color.WHITE, BORDER, 12));
+        for (Expense expense : dueToday) addDashboardDueRowModern(dueCard, expense);
+        if (dueToday.isEmpty()) {
+            TextView empty = label("No bills are due today.", 13, BODY, false);
+            empty.setGravity(Gravity.CENTER);
+            dueCard.addView(empty, new LinearLayout.LayoutParams(-1, 52));
+        }
+        body.addView(dueCard);
+        body.addView(space(16));
+
+        LinearLayout insight = row();
+        insight.setPadding(12, 9, 12, 8);
+        insight.setBackground(roundedBackground(Color.rgb(221, 249, 237), 10));
+        TextView insightText = label("*  Utilities are up 18% on September -\n    Meralco is the biggest jump. Check\n    aircon hours this cutoff.", 11, Color.rgb(0, 55, 59), false);
+        insight.addView(insightText, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView dismiss = label("×", 18, Color.rgb(0, 82, 86), false);
+        dismiss.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        dismiss.setContentDescription("Dismiss insight");
+        insight.addView(dismiss, new LinearLayout.LayoutParams(22, -1));
+        insight.setMinimumHeight(80);
+        body.addView(insight, new LinearLayout.LayoutParams(-1, -2));
+
+        scroll.addView(body);
+        content.addView(scroll);
+    }
+
+    private void addDashboardDueRowModern(LinearLayout parent, Expense expense) {
+        boolean overdue = "Overdue".equalsIgnoreCase(expense.status);
+        LinearLayout item = row();
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setPadding(12, 5, 12, 5);
+        TextView mark = label(iconForCategory(expense.category), 17, overdue ? RED : Color.rgb(0, 55, 59), true);
+        mark.setGravity(Gravity.CENTER);
+        mark.setBackground(roundedBackground(overdue ? Color.rgb(255, 237, 239) : Color.rgb(243, 248, 247), 24));
+        item.addView(mark, new LinearLayout.LayoutParams(38, 38));
+        item.addView(spaceHorizontal(10));
+        LinearLayout copy = column(Color.TRANSPARENT, 0);
+        copy.addView(label(expense.name, 14, Color.rgb(0, 35, 47), true));
+        String detail = overdue ? "Overdue - " + expense.date : expense.category;
+        copy.addView(label(detail, 12, overdue ? RED : BODY, false));
+        item.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        item.addView(label(expense.amount, 14, Color.rgb(0, 35, 47), true));
+        TextView check = label("OK", 10, Color.rgb(0, 120, 91), true);
+        check.setGravity(Gravity.CENTER);
+        check.setBackground(roundedBackground(Color.rgb(244, 250, 248), 24));
+        item.addView(check, new LinearLayout.LayoutParams(30, 30));
+        parent.addView(item, new LinearLayout.LayoutParams(-1, 72));
+        if (parent.getChildCount() > 1) {
+            View divider = new View(this);
+            divider.setBackgroundColor(BORDER);
+            parent.addView(divider, parent.getChildCount() - 1, new LinearLayout.LayoutParams(-1, 1));
+        }
+    }
+
+    private List<Expense> dueTodayExpenses() {
+        List<Expense> due = new ArrayList<>();
+        for (Expense expense : expenses) {
+            if ("Paid".equalsIgnoreCase(expense.status)) continue;
+            String date = expense.date == null ? "" : expense.date.toLowerCase(Locale.ROOT);
+            if (date.contains("today") || date.contains("oct 10")) due.add(expense);
+        }
+        return due;
+    }
+
+    private Expense nextExpense(List<Expense> dueToday) {
+        for (Expense candidate : expenses) {
+            if ("Paid".equalsIgnoreCase(candidate.status) || dueToday.contains(candidate)) continue;
+            return candidate;
+        }
+        return null;
+    }
+
+    private double numericAmount(String amount) {
+        if (amount == null) return 0;
+        try { return Double.parseDouble(amount.replaceAll("[^0-9.]", "")); }
+        catch (NumberFormatException ignored) { return 0; }
+    }
+
+    private String formatAmount(double amount) {
+        return String.format(Locale.US, "\u20b1%,.2f", amount);
+    }
+
+    private String iconForCategory(String category) {
+        if (category == null) return "○";
+        String value = category.toLowerCase(Locale.ROOT);
+        if (value.contains("housing") || value.contains("rent")) return "H";
+        if (value.contains("utility") || value.contains("electric") || value.contains("water")) return "~";
+        if (value.contains("internet") || value.contains("subscription")) return "◉";
+        return "○";
+    }
+
     private void renderDashboard() {
         ScrollView scroll = new ScrollView(this);
         LinearLayout body = column(PLANT_SHEET, 16);
-        body.setPadding(16, 8, 16, 80);
-        body.addView(label("₱23,730.00 due today", 30, INK, false));
-        body.addView(label("Next cutoff is in 4 days · October 15", 14, BODY, false));
-        body.addView(space(24));
-        body.addView(section("Due today", "3 payments"));
-        LinearLayout dueCard = card();
-        addDueRow(dueCard, "Electricity", "Utilities", "₱2,450.00", false);
-        addDueRow(dueCard, "Apartment rent", "Housing", "₱18,000.00", false);
-        addDueRow(dueCard, "Credit card", "Subscriptions · Overdue", "₱3,280.00", true);
+        body.setPadding(16, 8, 16, 88);
+
+        LinearLayout hero = column(Color.rgb(0, 55, 59), 0);
+        hero.setPadding(9, 6, 9, 0);
+        hero.setBackground(roundedBackground(Color.rgb(0, 55, 59), 16));
+        TextView date = label("SATURDAY, OCT 10", 9, PLANT_MINT, true);
+        date.setLetterSpacing(.08f);
+        hero.addView(date);
+        LinearLayout total = row();
+        total.setGravity(Gravity.CENTER_VERTICAL);
+        total.addView(label("₱4,849.50", 28, Color.WHITE, true), new LinearLayout.LayoutParams(0, 34, 1));
+        total.addView(label("due today", 12, Color.rgb(190, 205, 207), false));
+        hero.addView(total);
+        body.addView(hero, new LinearLayout.LayoutParams(-1, 52));
+        body.addView(space(3));
+
+        LinearLayout dueHeading = row();
+        dueHeading.addView(label("Due today", 13, Color.rgb(0, 55, 59), true), new LinearLayout.LayoutParams(0, -2, 1));
+        dueHeading.addView(label("3 bills", 9, BODY, false));
+        body.addView(dueHeading);
+
+        LinearLayout dueCard = column(Color.WHITE, 0);
+        dueCard.setBackground(borderRoundedBackground(Color.WHITE, BORDER, 12));
+        addDashboardDueRow(dueCard, "Globe Plan 999", "", "₱999.00", true, "wifi");
+        addDashboardDueRow(dueCard, "Meralco electricity", "", "₱3,240.50", false, "bolt");
+        addDashboardDueRow(dueCard, "Maynilad water", "", "₱610.00", false, "bolt");
         body.addView(dueCard);
-        body.addView(space(20));
-        body.addView(section("Where it goes", "This month"));
-        LinearLayout breakdown = card();
-        breakdown.addView(label("Housing                         ₱18,000", 14, BODY, false));
-        breakdown.addView(label("Utilities                       ₱12,450", 14, BODY, false));
-        breakdown.addView(label("Lifestyle                      ₱19,280", 14, BODY, false));
-        breakdown.addView(space(10));
-        breakdown.addView(label("36% Housing   25% Utilities   39% Lifestyle", 13, INDIGO, true));
-        body.addView(breakdown);
-        body.addView(space(20));
-        body.addView(section("Groups & cutoffs", ""));
-        LinearLayout cutoffs = row();
-        cutoffs.addView(cutoff("1st cutoff", "₱31,450", "Paid"), new LinearLayout.LayoutParams(0, -2, 1));
-        cutoffs.addView(spaceHorizontal(12));
-        cutoffs.addView(cutoff("2nd cutoff", "₱18,280", "Upcoming"), new LinearLayout.LayoutParams(0, -2, 1));
-        body.addView(cutoffs);
-        body.addView(space(20));
-        LinearLayout insight = card();
-        insight.setBackgroundColor(Color.rgb(247, 247, 248));
-        insight.addView(label("💡  A small win", 16, INDIGO, true));
-        insight.addView(label("You are spending 12% less on subscriptions this month.", 14, BODY, false));
-        body.addView(insight);
+
+        TextView insight = label("♧  Utilities are up 18% on September —\n    Meralco is the biggest jump. Check", 10, Color.rgb(0, 55, 59), false);
+        insight.setPadding(8, 5, 8, 3);
+        insight.setBackground(roundedBackground(Color.rgb(221, 249, 237), 10));
+        body.addView(insight, new LinearLayout.LayoutParams(-1, 35));
+
+        LinearLayout goesHeading = row();
+        goesHeading.addView(label("Where it goes", 13, Color.rgb(0, 55, 59), true), new LinearLayout.LayoutParams(0, -2, 1));
+        goesHeading.addView(label("October · ₱39,892.25", 9, BODY, false));
+        body.addView(goesHeading);
+        LinearLayout bars = row();
+        bars.setBackground(roundedBackground(Color.rgb(224, 232, 231), 6));
+        bars.setClipToOutline(true);
+        View housing = new View(this); housing.setBackgroundColor(Color.rgb(0, 55, 59));
+        View utilities = new View(this); utilities.setBackgroundColor(PLANT_TEAL);
+        View lifestyle = new View(this); lifestyle.setBackgroundColor(Color.rgb(0, 194, 107));
+        View other = new View(this); other.setBackgroundColor(Color.rgb(184, 205, 201));
+        bars.addView(housing, new LinearLayout.LayoutParams(0, 6, 5));
+        bars.addView(utilities, new LinearLayout.LayoutParams(0, 6, 3));
+        bars.addView(lifestyle, new LinearLayout.LayoutParams(0, 6, 2));
+        bars.addView(other, new LinearLayout.LayoutParams(0, 6, 1));
+        body.addView(bars);
         scroll.addView(body);
         content.addView(scroll);
+    }
+
+    private void addDashboardDueRow(LinearLayout parent, String name, String detail, String amount, boolean overdue, String icon) {
+        LinearLayout item = row();
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setPadding(5, 1, 5, 1);
+        TextView mark = label(icon.equals("wifi") ? "⌁" : "ϟ", 14, overdue ? RED : Color.rgb(0, 55, 59), true);
+        mark.setGravity(Gravity.CENTER);
+        mark.setBackground(roundedBackground(overdue ? Color.rgb(255, 237, 239) : Color.rgb(243, 248, 247), 24));
+        item.addView(mark, new LinearLayout.LayoutParams(22, 22));
+        item.addView(spaceHorizontal(5));
+        LinearLayout copy = column(Color.TRANSPARENT, 0);
+        copy.addView(label(name, 11, Color.rgb(0, 35, 47), true));
+        item.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        item.addView(label(amount, 11, Color.rgb(0, 35, 47), true));
+        TextView check = label("✓", 15, Color.rgb(0, 120, 91), true);
+        check.setGravity(Gravity.CENTER);
+        item.addView(check, new LinearLayout.LayoutParams(22, 22));
+        parent.addView(item, new LinearLayout.LayoutParams(-1, 25));
+        if (parent.getChildCount() > 1) {
+            View divider = new View(this);
+            divider.setBackgroundColor(BORDER);
+            parent.addView(divider, parent.getChildCount() - 1, new LinearLayout.LayoutParams(-1, 1));
+        }
     }
 
     private void renderBudget() {
